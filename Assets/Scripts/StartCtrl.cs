@@ -3,25 +3,40 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class StartCtrl : MonoBehaviour
 {
+    [SerializeField]
+    Transform _canvas;
+    [SerializeField]
+    private TMP_InputField _ip;
+
     // Start is called before the first frame update
     void Start()
     {
-        Button createButton = GetComponent<Button>();
+        Button createButton = _canvas.Find("CreateBtn").GetComponent<Button>();
         createButton.onClick.AddListener(OnCreateClick);
 
-        Button joinButton = GetComponent<Button>();
+        Button joinButton = _canvas.Find("JoinBtn").GetComponent<Button>();
         joinButton.onClick.AddListener(OnJoinClick);
+
+        _ip = _canvas.Find("IP").GetComponent<TMP_InputField>();
     }
 
     private void OnCreateClick()
     {
+        var transport = NetworkManager.Singleton.NetworkConfig.transport as UnityTransport;
+        transport.SetConnectionData(_ip.text, 7777);
+
         NetworkManager.Singleton.StartHost();
     }
 
-    private void OnJoinClick(){
+    private void OnJoinClick()
+    {
+        var transport = NetworkManager.Singleton.NetworkConfig.transport as UnityTransport;
+        transport.SetConnectionData(_ip.text, 7777);
+
         NetworkManager.Singleton.StartClient();
 
     }

@@ -51,5 +51,6 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "NetCodeText2.sln"
+    "dotnet.defaultSolution": "NetCodeText2.sln",
+    "dotnet.preferCSharpExtension": true
 }

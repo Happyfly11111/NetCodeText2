@@ -2,8 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Unity.Netcode;
 
-public class GameManager : MonoBehaviour
+public class GameManager : NetworkBehaviour
 {
     // Start is called before the first frame update
     void Start()
@@ -11,10 +12,8 @@ public class GameManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
         SceneManager.LoadScene(1);
     }
-
-    // Update is called once per frame
-    void Update()
+    private void LoadScene()
     {
-        
+        NetworkManager.SceneManager.LoadScene("Lobby", LoadSceneMode.Single);
     }
 }
