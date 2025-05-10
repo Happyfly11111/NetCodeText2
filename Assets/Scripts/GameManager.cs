@@ -3,17 +3,30 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Unity.Netcode;
+using Unity.VisualScripting;
 
 public class GameManager : NetworkBehaviour
 {
+    public static GameManager Instance;
     // Start is called before the first frame update
+    void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
     void Start()
     {
-        DontDestroyOnLoad(gameObject);
-        SceneManager.LoadScene(1);
+        SceneManager.LoadScene("Start");
     }
-    private void LoadScene()
+    public void LoadScene(string sceneName)
     {
-        NetworkManager.SceneManager.LoadScene("Lobby", LoadSceneMode.Single);
+        NetworkManager.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
     }
 }

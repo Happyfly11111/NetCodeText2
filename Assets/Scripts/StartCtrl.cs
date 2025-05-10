@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -26,18 +27,28 @@ public class StartCtrl : MonoBehaviour
 
     private void OnCreateClick()
     {
-        var transport = NetworkManager.Singleton.NetworkConfig.transport as UnityTransport;
+        var transport = NetworkManager.Singleton.NetworkConfig.NetworkTransport as UnityTransport;
         transport.SetConnectionData(_ip.text, 7777);
 
         NetworkManager.Singleton.StartHost();
+
+        // 检查GameManager.Instance是否为null
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.LoadScene("Lobby");
+        }
+        else
+        {
+            Debug.LogError("GameManager.Instance is null. Please ensure GameManager is initialized.");
+        }
     }
 
     private void OnJoinClick()
     {
-        var transport = NetworkManager.Singleton.NetworkConfig.transport as UnityTransport;
+        var transport = NetworkManager.Singleton.NetworkConfig.NetworkTransport as UnityTransport;
         transport.SetConnectionData(_ip.text, 7777);
 
         NetworkManager.Singleton.StartClient();
-
+        
     }
 }
