@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using Unity.Netcode;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -10,12 +11,14 @@ public struct PlayerInfo : INetworkSerializable //*在网络中传输的结构�
     public ulong id;
     public bool isReady;
     public int gender;
+    public string name;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter //*序列化 反序列化
     {
         serializer.SerializeValue(ref id);
         serializer.SerializeValue(ref isReady);
         serializer.SerializeValue(ref gender);
+        serializer.SerializeValue(ref name);
     }
 }
 
@@ -31,6 +34,7 @@ public class LobbyCtrl : NetworkBehaviour
 
     Button _startBtn;
     Toggle _ready;
+    TMP_InputField _nameInputField;
     Dictionary<ulong, PlayerListCell> _cellDictionary;
     Dictionary<ulong, PlayerInfo> _allPlayerInfo;
 
@@ -48,22 +52,31 @@ public class LobbyCtrl : NetworkBehaviour
         _content = _canvas.Find("List/Viewport/Content").GetComponent<RectTransform>();
         _originCell = _content.Find("Cell").gameObject;
         _startBtn = _canvas.Find("StartBtn").GetComponent<Button>();
+        _startBtn.interactable = false;
         _startBtn.onClick.AddListener(OnStartClick);
         _ready = _canvas.Find("Ready").GetComponent<Toggle>();
         _ready.onValueChanged.AddListener(OnReadyToggle);
+        _nameInputField = _canvas.Find("Name/NameInput").GetComponent<TMP_InputField>();
+        _nameInputField.onEndEdit.AddListener(OnEndEdit);
 
 
-        // 添加本地玩家//!添加服务器改脚本的字典
+        //添加本地玩家//!(目前是主机才会运行这部分代码) 因为其他客户端直接执行OnClientConn
         PlayerInfo playerInfo = new PlayerInfo();
         playerInfo.id = NetworkManager.LocalClientId;
         playerInfo.isReady = false;
         playerInfo.gender = 0;
+        playerInfo.name = "玩家" + playerInfo.id.ToString();
+        _nameInputField.text = playerInfo.name;
+
         AddPlayer(playerInfo);
 
         Toggle maleT = _canvas.Find("Gender/MaleT").GetComponent<Toggle>();
-        Toggle femaleT = _canvas.Find("Gender/FemaleT").GetComponent<Toggle>();
+        maleT.isOn = true;
         maleT.onValueChanged.AddListener(OnMaleToggle);
+        Toggle femaleT = _canvas.Find("Gender/FemaleT").GetComponent<Toggle>();
+        femaleT.isOn = false;
         femaleT.onValueChanged.AddListener(OnFemaleToggle);
+        BodyCtrl.Instance.SwitchGender(0);
 
         base.OnNetworkSpawn();
     }
@@ -75,6 +88,7 @@ public class LobbyCtrl : NetworkBehaviour
         playerInfo.id = clientId;
         playerInfo.isReady = false;
         playerInfo.gender = 0;
+        playerInfo.name = "玩家" + clientId.ToString();
         AddPlayer(playerInfo);
 
         UpdateAllPlayerInfo();//服务器将玩家信息发送给客户端 客户端更新玩家信息
@@ -82,10 +96,26 @@ public class LobbyCtrl : NetworkBehaviour
 
     void UpdateAllPlayerInfo()
     {
-        foreach (var playerInfo in _allPlayerInfo)
+        bool canGo = true;
+        foreach (var playerInfo in _allPlayerInfo)//服务器遍历就行
         {
+            if (!playerInfo.Value.isReady)//如果有一个人没有准备好
+            {
+                canGo = false;
+            }
+
             UpdatePlayerInfoClientRpc(playerInfo.Value);
         }
+        
+        _startBtn.interactable = canGo; //所有玩家都准备好才能点击开始按钮
+        // if (canGo)//所有玩家都准备好
+        // {
+        //     _startBtn.interactable = true;
+        // }
+        // else
+        // {
+        //     _startBtn.interactable = false;
+        // }
     }
 
     [ClientRpc]//!会在当服务器的主机也调用 //所有客户端执行
@@ -189,11 +219,31 @@ public class LobbyCtrl : NetworkBehaviour
             }
             else
             {
-                UpdateAllPlayerInfoServerRpc(playerInfo);//只更新自己
+                UpdateAllPlayerInfoServerRpc(playerInfo);
             }
             BodyCtrl.Instance.SwitchGender(1);
         }
 
+    }
+
+    void OnEndEdit(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+        PlayerInfo playerInfo = _allPlayerInfo[NetworkManager.LocalClientId];
+        playerInfo.name = text;
+        _allPlayerInfo[NetworkManager.LocalClientId] = playerInfo;
+        _cellDictionary[NetworkManager.LocalClientId].UpdatePlayerInfo(playerInfo);
+        if (IsServer)
+        {
+            UpdateAllPlayerInfo();
+        }
+        else
+        {
+            UpdateAllPlayerInfoServerRpc(playerInfo);
+        }
     }
 
 
@@ -214,6 +264,4 @@ public class LobbyCtrl : NetworkBehaviour
 
         _allPlayerInfo.Add(playerInfo.id, playerInfo);
     }
-
-
 }

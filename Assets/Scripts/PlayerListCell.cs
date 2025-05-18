@@ -16,8 +16,8 @@ public class PlayerListCell : MonoBehaviour
     {
         PlayerInfo = playerInfo;
         _name = transform.Find("Name").GetComponent<TMP_Text>();
+        _name.text = playerInfo.name;
         _ready = transform.Find("Ready").GetComponent<TMP_Text>();
-        _name.text = "Player" + playerInfo.id.ToString();
         _ready.text = playerInfo.isReady ? "已准备" : "未准备";
         _gender = transform.Find("Gender").GetComponent<TMP_Text>();
         _gender.text = playerInfo.gender == 0 ? "男" : "女";
@@ -28,6 +28,7 @@ public class PlayerListCell : MonoBehaviour
         PlayerInfo = playerInfo;
         _ready.text = playerInfo.isReady ? "已准备" : "未准备";
         _gender.text = playerInfo.gender == 0 ? "男" : "女";
+        _name.text = playerInfo.name;
     }
 
     public void SetReady(bool isOn)
@@ -39,5 +40,4 @@ public class PlayerListCell : MonoBehaviour
     {
         _gender.text = gender == 0 ? "男" : "女";
     }
-
 }
