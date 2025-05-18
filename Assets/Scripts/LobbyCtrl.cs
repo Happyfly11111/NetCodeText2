@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,11 +9,13 @@ public struct PlayerInfo : INetworkSerializable //*在网络中传输的结构�
 {
     public ulong id;
     public bool isReady;
+    public int gender;
 
-    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter //*序列化 反序列化
     {
         serializer.SerializeValue(ref id);
         serializer.SerializeValue(ref isReady);
+        serializer.SerializeValue(ref gender);
     }
 }
 
@@ -54,7 +57,13 @@ public class LobbyCtrl : NetworkBehaviour
         PlayerInfo playerInfo = new PlayerInfo();
         playerInfo.id = NetworkManager.LocalClientId;
         playerInfo.isReady = false;
+        playerInfo.gender = 0;
         AddPlayer(playerInfo);
+
+        Toggle maleT = _canvas.Find("Gender/MaleT").GetComponent<Toggle>();
+        Toggle femaleT = _canvas.Find("Gender/FemaleT").GetComponent<Toggle>();
+        maleT.onValueChanged.AddListener(OnMaleToggle);
+        femaleT.onValueChanged.AddListener(OnFemaleToggle);
 
         base.OnNetworkSpawn();
     }
@@ -65,6 +74,7 @@ public class LobbyCtrl : NetworkBehaviour
         PlayerInfo playerInfo = new PlayerInfo();
         playerInfo.id = clientId;
         playerInfo.isReady = false;
+        playerInfo.gender = 0;
         AddPlayer(playerInfo);
 
         UpdateAllPlayerInfo();//服务器将玩家信息发送给客户端 客户端更新玩家信息
@@ -78,14 +88,14 @@ public class LobbyCtrl : NetworkBehaviour
         }
     }
 
-    [ClientRpc]//!会在当服务器的主机也调用
-    void UpdatePlayerInfoClientRpc(PlayerInfo playerInfo)//客户端执行
+    [ClientRpc]//!会在当服务器的主机也调用 //所有客户端执行
+    void UpdatePlayerInfoClientRpc(PlayerInfo playerInfo)
     {
         if (!IsServer)//防止主机执行 主机(也是客户端)已经执行了
         {
             if (_allPlayerInfo.ContainsKey(playerInfo.id))//字典中包含客户端自己 
             {
-                _allPlayerInfo[playerInfo.id] = playerInfo;///更新自己的信息
+                _allPlayerInfo[playerInfo.id] = playerInfo;//!更新自己的信息 不用AddPlayer 因为已经在OnNetworkSpawn中添加了
             }
             else//字典中不包含客户端自己 说明是新客户端
             {
@@ -99,14 +109,14 @@ public class LobbyCtrl : NetworkBehaviour
     {
         foreach (var playerInfo in _allPlayerInfo)
         {
-            _cellDictionary[playerInfo.Key].SetReady(playerInfo.Value.isReady);
+            //_cellDictionary[playerInfo.Key].SetReady(playerInfo.Value.isReady);
+            _cellDictionary[playerInfo.Key].UpdatePlayerInfo(playerInfo.Value);
         }
     }
 
     private void OnReadyToggle(bool isOn)
     {
         //本地玩家准备状态改变
-        _cellDictionary[NetworkManager.LocalClientId].SetReady(isOn);
         UpdatePlayerInfo(NetworkManager.LocalClientId, isOn);
 
         if (IsServer)
@@ -116,24 +126,74 @@ public class LobbyCtrl : NetworkBehaviour
         else
         {
             //客户端把自己的准备数据发送给服务器
-            UpdateAllPlayerInfoServerRpc(_allPlayerInfo[NetworkManager.LocalClientId]); 
+            UpdateAllPlayerInfoServerRpc(_allPlayerInfo[NetworkManager.LocalClientId]);
         }
     }
 
-    [ServerRpc (RequireOwnership =false)]
+    [ServerRpc(RequireOwnership = false)]
     void UpdateAllPlayerInfoServerRpc(PlayerInfo playerInfo)
     {
         _allPlayerInfo[playerInfo.id] = playerInfo;
-        _cellDictionary[playerInfo.id].SetReady(playerInfo.isReady);
+        _cellDictionary[playerInfo.id].UpdatePlayerInfo(playerInfo);
         UpdateAllPlayerInfo();//!服务器执行 让服务器更新所有玩家信息(多了一步)
     }
 
-    void UpdatePlayerInfo(ulong id, bool isReady)
+    void UpdatePlayerInfo(ulong id, bool isOn)
     {
         //由于 PlayerInfo 是值类型（结构体），直接修改会导致编译器报错。
         PlayerInfo playerInfo = _allPlayerInfo[id]; // 获取副本
-        playerInfo.isReady = isReady;              // 修改副本
+        playerInfo.isReady = isOn;              // 修改副本
         _allPlayerInfo[id] = playerInfo;           // 存回字典
+
+        _cellDictionary[NetworkManager.LocalClientId].SetReady(isOn);
+    }
+
+    void OnMaleToggle(bool isOn)
+    {
+        if (isOn)
+        {
+            //更新数据
+            PlayerInfo playerInfo = _allPlayerInfo[NetworkManager.LocalClientId];
+            playerInfo.gender = 0;
+            _allPlayerInfo[NetworkManager.LocalClientId] = playerInfo;
+            //更新UI
+            _cellDictionary[NetworkManager.LocalClientId].UpdatePlayerInfo(playerInfo);
+
+            if (IsServer)
+            {
+                UpdateAllPlayerInfo();
+            }
+            else
+            {
+                UpdateAllPlayerInfoServerRpc(playerInfo);
+            }
+            BodyCtrl.Instance.SwitchGender(0);
+        }
+
+    }
+
+    void OnFemaleToggle(bool isOn)
+    {
+        if (isOn)
+        {
+            //更新数据
+            PlayerInfo playerInfo = _allPlayerInfo[NetworkManager.LocalClientId];
+            playerInfo.gender = 1;
+            _allPlayerInfo[NetworkManager.LocalClientId] = playerInfo;
+            //更新UI
+            _cellDictionary[NetworkManager.LocalClientId].UpdatePlayerInfo(playerInfo);
+
+            if (IsServer)
+            {
+                UpdateAllPlayerInfo();
+            }
+            else
+            {
+                UpdateAllPlayerInfoServerRpc(playerInfo);//只更新自己
+            }
+            BodyCtrl.Instance.SwitchGender(1);
+        }
+
     }
 
 
@@ -154,4 +214,6 @@ public class LobbyCtrl : NetworkBehaviour
 
         _allPlayerInfo.Add(playerInfo.id, playerInfo);
     }
+
+
 }

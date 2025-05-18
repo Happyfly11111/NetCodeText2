@@ -12,6 +12,8 @@ public class StartCtrl : MonoBehaviour
     Transform _canvas;
     [SerializeField]
     private TMP_InputField _ip;
+    [SerializeField]
+    private string _defaultIp = "127.0.0.1"; // 默认IP地址
 
     // Start is called before the first frame update
     void Start()
@@ -23,12 +25,18 @@ public class StartCtrl : MonoBehaviour
         joinButton.onClick.AddListener(OnJoinClick);
 
         _ip = _canvas.Find("IP").GetComponent<TMP_InputField>();
+
+        // 设置默认IP地址
+        _ip.text = _defaultIp;
     }
 
     private void OnCreateClick()
     {
+        string ip = GetValidatedIP(_ip.text);
+        if (ip == null) return;
+
         var transport = NetworkManager.Singleton.NetworkConfig.NetworkTransport as UnityTransport;
-        transport.SetConnectionData(_ip.text, 7777);
+        transport.SetConnectionData(ip, 7777);
 
         NetworkManager.Singleton.StartHost();
 
@@ -45,10 +53,35 @@ public class StartCtrl : MonoBehaviour
 
     private void OnJoinClick()
     {
+        string ip = GetValidatedIP(_ip.text);
+        if (ip == null) return;
+
         var transport = NetworkManager.Singleton.NetworkConfig.NetworkTransport as UnityTransport;
-        transport.SetConnectionData(_ip.text, 7777);
+        transport.SetConnectionData(ip, 7777);
 
         NetworkManager.Singleton.StartClient();
-        
+
+    }
+    private string GetValidatedIP(string ip)
+    {
+        // 如果用户没有输入，使用默认IP
+        if (string.IsNullOrEmpty(ip.Trim()))
+        {
+            ip = _defaultIp;
+            Debug.Log($"使用默认IP: {ip}");
+            return ip;
+        }
+
+        // 简单验证IP格式（可以根据需要扩展更严格的验证）
+        if (ip == "localhost" || System.Text.RegularExpressions.Regex.IsMatch(ip,
+            @"^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"))
+        {
+            return ip;
+        }
+        else
+        {
+            Debug.LogError($"无效的IP地址: {ip}");
+            return null;
+        }
     }
 }
