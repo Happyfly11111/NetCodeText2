@@ -52,7 +52,7 @@ public class LobbyCtrl : NetworkBehaviour
         _content = _canvas.Find("List/Viewport/Content").GetComponent<RectTransform>();
         _originCell = _content.Find("Cell").gameObject;
         _startBtn = _canvas.Find("StartBtn").GetComponent<Button>();
-        _startBtn.interactable = false;
+        _startBtn.gameObject.SetActive(false);
         _startBtn.onClick.AddListener(OnStartClick);
         _ready = _canvas.Find("Ready").GetComponent<Toggle>();
         _ready.onValueChanged.AddListener(OnReadyToggle);
@@ -107,15 +107,7 @@ public class LobbyCtrl : NetworkBehaviour
             UpdatePlayerInfoClientRpc(playerInfo.Value);
         }
         
-        _startBtn.interactable = canGo; //所有玩家都准备好才能点击开始按钮
-        // if (canGo)//所有玩家都准备好
-        // {
-        //     _startBtn.interactable = true;
-        // }
-        // else
-        // {
-        //     _startBtn.interactable = false;
-        // }
+        _startBtn.gameObject.SetActive(canGo); //所有玩家都准备好才能点击开始按钮
     }
 
     [ClientRpc]//!会在当服务器的主机也调用 //所有客户端执行
@@ -146,7 +138,7 @@ public class LobbyCtrl : NetworkBehaviour
 
     private void OnReadyToggle(bool isOn)
     {
-        //本地玩家准备状态改变
+        //本地玩家准备状态改变//!(目前是主机才会运行这部分代码)            
         UpdatePlayerInfo(NetworkManager.LocalClientId, isOn);
 
         if (IsServer)
@@ -249,7 +241,8 @@ public class LobbyCtrl : NetworkBehaviour
 
     void OnStartClick()
     {
-
+        //开始游戏
+        GameManager.Instance.LoadScene("Game");
     }
 
 
