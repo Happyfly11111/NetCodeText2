@@ -47,7 +47,8 @@ public class LobbyCtrl : NetworkBehaviour
         }
 
         // 客户端和服务器都会执行的初始化逻辑
-        _allPlayerInfo = new Dictionary<ulong, PlayerInfo>();
+        //?_allPlayerInfo = new Dictionary<ulong, PlayerInfo>();
+        _allPlayerInfo = GameManager.Instance.AllPlayerInfos;
         _cellDictionary = new Dictionary<ulong, PlayerListCell>();
         _content = _canvas.Find("List/Viewport/Content").GetComponent<RectTransform>();
         _originCell = _content.Find("Cell").gameObject;

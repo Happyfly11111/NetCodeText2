@@ -13,7 +13,6 @@ public class GameCtrl : NetworkBehaviour
     TMP_InputField _input;
     RectTransform _content;
     GameObject _dialogCell;
-
     
     public override void OnNetworkSpawn()
     {
@@ -47,7 +46,6 @@ public class GameCtrl : NetworkBehaviour
         {
             SendMsgToOthersServerRpc(playerInfo, _input.text);
         }
-
     }
 
     [ClientRpc]
@@ -63,7 +61,7 @@ public class GameCtrl : NetworkBehaviour
     void SendMsgToOthersServerRpc(PlayerInfo playerInfo, string content)
     {
         AddDialogCell(playerInfo.name, content);
-        SendMsgToOthersServerRpc(playerInfo, content);
+        SendMsgToOthersClientRpc(playerInfo, content);
     }
 
     void AddDialogCell(string playerName, string content)

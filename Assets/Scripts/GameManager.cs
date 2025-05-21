@@ -8,8 +8,8 @@ public class GameManager : NetworkBehaviour
 {
     public static GameManager Instance;
 
-    public Dictionary<ulong, PlayerInfo> AllPlayerInfos{ get; private set; }
-    // Start is called before the first frame update
+    //?public Dictionary<ulong, PlayerInfo> AllPlayerInfos{ get; private set; }
+    public Dictionary<ulong, PlayerInfo> AllPlayerInfos;
     void Awake()
     {
         if (Instance == null)
@@ -21,6 +21,7 @@ public class GameManager : NetworkBehaviour
         {
             Destroy(gameObject);
         }
+        AllPlayerInfos = new Dictionary<ulong, PlayerInfo>();
     }
     void Start()
     {
