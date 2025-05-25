@@ -52,5 +52,8 @@
         "Temp/": true
     },
     "dotnet.defaultSolution": "NetCodeTest2.sln",
-    "dotnet.preferCSharpExtension": true
+    "dotnet.preferCSharpExtension": true,
+    "aide.convertLanguagePairs": {
+        "csharp": "python"
+    }
 }

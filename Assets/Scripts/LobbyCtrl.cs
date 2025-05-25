@@ -47,8 +47,7 @@ public class LobbyCtrl : NetworkBehaviour
         }
 
         // 客户端和服务器都会执行的初始化逻辑
-        //?_allPlayerInfo = new Dictionary<ulong, PlayerInfo>();
-        _allPlayerInfo = GameManager.Instance.AllPlayerInfos;
+        _allPlayerInfo = new Dictionary<ulong, PlayerInfo>();
         _cellDictionary = new Dictionary<ulong, PlayerListCell>();
         _content = _canvas.Find("List/Viewport/Content").GetComponent<RectTransform>();
         _originCell = _content.Find("Cell").gameObject;
@@ -114,7 +113,7 @@ public class LobbyCtrl : NetworkBehaviour
     [ClientRpc]//!会在当服务器的主机也调用 //所有客户端执行
     void UpdatePlayerInfoClientRpc(PlayerInfo playerInfo)
     {
-        if (!IsServer)//防止主机执行 主机(也是客户端)已经执行了
+        if (!IsServer)//防止主机执行 主机(也是客户端)在OnClientConn方法中已经执行了
         {
             if (_allPlayerInfo.ContainsKey(playerInfo.id))//字典中包含客户端自己 
             {
@@ -244,6 +243,7 @@ public class LobbyCtrl : NetworkBehaviour
     {
         //开始游戏
         GameManager.Instance.LoadScene("Game");
+        GameManager.Instance.StartGame(_allPlayerInfo);
     }
 
 
