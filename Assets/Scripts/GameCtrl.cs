@@ -12,9 +12,13 @@ public class GameCtrl : NetworkBehaviour
     private Transform _canvas;
     [SerializeField]
     private CinemachineVirtualCamera _cameraCtrl;
+    [SerializeField]
+    private GameObject _dialogCell;
+    [SerializeField]
+    private TMP_Text _spawnPositionText;
     TMP_InputField _input;
     RectTransform _content;
-    GameObject _dialogCell;
+
 
     public static GameCtrl Instance { get; private set; }
 
@@ -51,6 +55,7 @@ public class GameCtrl : NetworkBehaviour
         {
             SendMsgToOthersServerRpc(playerInfo, _input.text);
         }
+        _input.text = "";
     }
 
     [ClientRpc]
@@ -89,8 +94,19 @@ public class GameCtrl : NetworkBehaviour
     public Vector3 GetSpanPos()
     {
         Vector3 pos = new Vector3();
-        Vector3 offset = transform.forward*Random.Range(-10f, 10f)+transform.right*Random.Range(-10f, 10f);
+        Vector3 offset = transform.forward * Random.Range(-5f, 5f) + transform.right * Random.Range(-5f, 5f);
         pos = transform.position + offset;
+        Debug.Log("GetSpanPos: " + pos);
         return pos;
+    }
+
+    public void UpdateSpawnPositionText(Vector3 spawnPos)
+    {
+        if (_spawnPositionText != null)
+        {
+            // 获取当前玩家的ID
+            ulong playerId = NetworkManager.Singleton.LocalClientId;
+            _spawnPositionText.text = $"玩家{playerId}的出生点位置:\nX={spawnPos.x:F2}, Y={spawnPos.y:F2}, Z={spawnPos.z:F2}";
+        }
     }
 }

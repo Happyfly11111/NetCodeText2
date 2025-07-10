@@ -5,6 +5,8 @@ using Unity.Netcode;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using System;
 
 public struct PlayerInfo : INetworkSerializable //*在网络中传输的结构体
 {
@@ -22,12 +24,13 @@ public struct PlayerInfo : INetworkSerializable //*在网络中传输的结构�
     }
 }
 
-
-
-public class LobbyCtrl : NetworkBehaviour
+[RequireComponent(typeof(Transform))]
+public class LobbyCtrl : NetworkBehaviour, IDragHandler, IEndDragHandler
 {
     [SerializeField]
     private Transform _canvas;
+    [SerializeField]
+    private RawImage _modelPreview;
 
     RectTransform _content;
     GameObject _originCell;
@@ -40,6 +43,17 @@ public class LobbyCtrl : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        // 检查EventSystem
+        if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
+        {
+            Debug.LogError("No EventSystem found in the scene!");
+            GameObject eventSystem = new GameObject("EventSystem");
+            eventSystem.AddComponent<UnityEngine.EventSystems.EventSystem>();
+            eventSystem.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+        }
+
+
+
         // 仅在服务器端注册客户端连接回调
         if (IsServer)
         {
@@ -59,7 +73,6 @@ public class LobbyCtrl : NetworkBehaviour
         _nameInputField = _canvas.Find("Name/NameInput").GetComponent<TMP_InputField>();
         _nameInputField.onEndEdit.AddListener(OnEndEdit);
 
-
         //添加本地玩家//!(目前是主机才会运行这部分代码) 因为其他客户端直接执行OnClientConn
         PlayerInfo playerInfo = new PlayerInfo();
         playerInfo.id = NetworkManager.LocalClientId;
@@ -76,8 +89,75 @@ public class LobbyCtrl : NetworkBehaviour
         Toggle femaleT = _canvas.Find("Gender/FemaleT").GetComponent<Toggle>();
         femaleT.isOn = false;
         femaleT.onValueChanged.AddListener(OnFemaleToggle);
-        BodyCtrl.Instance.SwitchGender(0);
 
+        // 获取RawImage引用
+        _modelPreview = _canvas.Find("Gender/Image/ModelPreview").GetComponent<RawImage>();
+        if (_modelPreview != null)
+        {
+            Debug.Log("ModelPreview found successfully!");
+            // 确保RawImage可以接收事件
+            _modelPreview.raycastTarget = true;
+
+            // 检查Canvas设置
+            Canvas canvas = _canvas.GetComponent<Canvas>();
+            if (canvas != null)
+            {
+                Debug.Log($"Canvas renderMode: {canvas.renderMode}");
+
+                // 检查GraphicRaycaster
+                var raycaster = _canvas.GetComponent<UnityEngine.UI.GraphicRaycaster>();
+                if (raycaster == null)
+                {
+                    Debug.LogError("No GraphicRaycaster found on canvas! Adding one...");
+                    _canvas.gameObject.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+                }
+            }
+
+            // 添加EventTrigger组件
+            var eventTrigger = _modelPreview.gameObject.GetComponent<UnityEngine.EventSystems.EventTrigger>();
+            if (eventTrigger == null)
+            {
+                eventTrigger = _modelPreview.gameObject.AddComponent<UnityEngine.EventSystems.EventTrigger>();
+            }
+
+            // 清除现有的triggers
+            eventTrigger.triggers.Clear();
+
+            // 添加拖拽事件
+            var dragEntry = new UnityEngine.EventSystems.EventTrigger.Entry();
+            dragEntry.eventID = UnityEngine.EventSystems.EventTriggerType.Drag;
+            dragEntry.callback.AddListener((data) =>
+            {
+                var pointerData = (PointerEventData)data;
+                Debug.Log($"EventTrigger Drag - Delta: {pointerData.delta}");
+                BodyCtrl.Instance.RotateModel(pointerData.delta.x);
+            });
+            eventTrigger.triggers.Add(dragEntry);
+
+            // 添加结束拖拽事件
+            var endDragEntry = new UnityEngine.EventSystems.EventTrigger.Entry();
+            endDragEntry.eventID = UnityEngine.EventSystems.EventTriggerType.EndDrag;
+            endDragEntry.callback.AddListener((data) =>
+            {
+                Debug.Log("EventTrigger EndDrag");
+                BodyCtrl.Instance.StopRotation();
+            });
+            eventTrigger.triggers.Add(endDragEntry);
+
+            // 添加点击测试事件
+            var clickEntry = new UnityEngine.EventSystems.EventTrigger.Entry();
+            clickEntry.eventID = UnityEngine.EventSystems.EventTriggerType.PointerClick;
+            clickEntry.callback.AddListener((data) => { Debug.Log("ModelPreview Clicked!"); });
+            eventTrigger.triggers.Add(clickEntry);
+
+            Debug.Log("Event triggers setup completed!");
+        }
+        else
+        {
+            Debug.LogError("Failed to find ModelPreview!");
+        }
+
+        BodyCtrl.Instance.SwitchGender(0);//默认选择男性
         base.OnNetworkSpawn();
     }
 
@@ -106,7 +186,7 @@ public class LobbyCtrl : NetworkBehaviour
 
             UpdatePlayerInfoClientRpc(playerInfo.Value);
         }
-        
+
         _startBtn.gameObject.SetActive(canGo); //所有玩家都准备好才能点击开始按钮
     }
 
@@ -257,5 +337,35 @@ public class LobbyCtrl : NetworkBehaviour
         _cellDictionary.Add(playerInfo.id, cell);
 
         _allPlayerInfo.Add(playerInfo.id, playerInfo);
+    }
+
+    // 实现拖拽接口
+    public void OnDrag(PointerEventData eventData)
+    {
+        if (_modelPreview == null) return;
+
+        Debug.Log($"OnDrag - Position: {eventData.position}, Delta: {eventData.delta}");
+
+        // 检查鼠标是否在RawImage的矩形范围内
+        RectTransform rect = _modelPreview.rectTransform;
+        Vector2 localPoint;
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(rect, eventData.position, eventData.pressEventCamera, out localPoint))
+        {
+            Debug.Log($"Drag inside RawImage area! LocalPoint: {localPoint}");
+            float rotationAmount = eventData.delta.x;
+            BodyCtrl.Instance.RotateModel(rotationAmount);
+        }
+        else
+        {
+            Debug.Log("Drag outside RawImage area");
+        }
+    }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        if (_modelPreview == null) return;
+
+        Debug.Log("OnEndDrag called");
+        BodyCtrl.Instance.StopRotation();
     }
 }

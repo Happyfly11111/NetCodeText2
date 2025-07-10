@@ -32,8 +32,26 @@ public class PlayerSync : NetworkBehaviour
     }
     void SyncTransform()
     {
+        // 只同步位置和旋转，不影响物理系统
+        Vector3 oldPos = _syncTransform.position;
+        Quaternion oldRot = _syncTransform.rotation;
+
         _syncTransform.position = _syncPos.Value;
         _syncTransform.rotation = _syncRot.Value;
+
+        // 如果位置发生了明显变化，记录日志
+        if (Vector3.Distance(oldPos, _syncPos.Value) > 0.1f)
+        {
+            Debug.Log($"[PlayerSync] 同步位置: 旧={oldPos}, 新={_syncPos.Value}, OwnerClientId={OwnerClientId}");
+        }
+
+        // 如果这个物体有Rigidbody，重置其速度以防止自动移动
+        Rigidbody rb = _syncTransform.GetComponent<Rigidbody>();
+        if (rb != null && !rb.isKinematic)
+        {
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
     }
 
     void UpLoadTransform()

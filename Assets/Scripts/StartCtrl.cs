@@ -15,7 +15,6 @@ public class StartCtrl : MonoBehaviour
     [SerializeField]
     private string _defaultIp = "127.0.0.1"; // 默认IP地址
 
-    // Start is called before the first frame update
     void Start()
     {
         Button createButton = _canvas.Find("CreateBtn").GetComponent<Button>();

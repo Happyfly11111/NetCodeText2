@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.boxqkrtm.ide.cursor": "file:D:/develop/Unity/MyPackage/MyUnityPlugins/com.unity.ide.cursor-master",
     "com.unity.burst": "1.8.21",
     "com.unity.cinemachine": "2.10.3",
     "com.unity.ide.visualstudio": "2.0.23",

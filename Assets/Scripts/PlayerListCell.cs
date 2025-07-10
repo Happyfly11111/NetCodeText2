@@ -33,7 +33,7 @@ public class PlayerListCell : MonoBehaviour
 
     public void SetReady(bool isOn)
     {
-        _ready.text = isOn ? "准备" : "未准备";
+        _ready.text = isOn ? "已准备" : "未准备";
     }
 
     public void SetGender(int gender)

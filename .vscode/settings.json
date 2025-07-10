@@ -55,5 +55,9 @@
     "dotnet.preferCSharpExtension": true,
     "aide.convertLanguagePairs": {
         "csharp": "python"
-    }
+    },
+    "editor.detectIndentation": false,
+    "editor.tabSize": 4,
+    "editor.formatOnPaste": true,
+    "editor.formatOnSave": true
 }

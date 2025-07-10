@@ -10,9 +10,9 @@ public class GameManager : NetworkBehaviour
 {
     public static GameManager Instance;
 
-    public Dictionary<ulong, PlayerInfo> AllPlayerInfos{ get; private set; }
-    
+    public Dictionary<ulong, PlayerInfo> AllPlayerInfos { get; private set; }
 
+    public UnityEvent OnLobbyLoaded;
     public UnityEvent OnStartGame;
 
     void Awake()
@@ -28,7 +28,7 @@ public class GameManager : NetworkBehaviour
         }
         SceneManager.LoadScene(1);
         AllPlayerInfos = new Dictionary<ulong, PlayerInfo>();
-        
+
     }
 
     public override void OnNetworkSpawn()
@@ -39,9 +39,14 @@ public class GameManager : NetworkBehaviour
 
 
     private void OnLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode,
-     List<ulong> clientCompleted,List<ulong> clientFailed)
+     List<ulong> clientCompleted, List<ulong> clientFailed)
     {
-        if (sceneName == "Game") 
+        Debug.Log("OnLoadEventCompleted");
+        if (sceneName == "Lobby")
+        {
+            OnLobbyLoaded.Invoke();
+        }
+        if (sceneName == "Game")
         {
             OnStartGame.Invoke(); //通知所有监听者游戏开始
         }
@@ -53,7 +58,7 @@ public class GameManager : NetworkBehaviour
         NetworkManager.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
     }
 
-   
+
     public void StartGame(Dictionary<ulong, PlayerInfo> allPlayerInfos)
     {
         AllPlayerInfos = allPlayerInfos;

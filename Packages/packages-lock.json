@@ -1,5 +1,13 @@
 {
   "dependencies": {
+    "com.boxqkrtm.ide.cursor": {
+      "version": "file:D:/develop/Unity/MyPackage/MyUnityPlugins/com.unity.ide.cursor-master",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.unity.test-framework": "1.1.9"
+      }
+    },
     "com.unity.burst": {
       "version": "1.8.21",
       "depth": 0,
